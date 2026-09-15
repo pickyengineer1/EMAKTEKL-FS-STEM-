@@ -788,5 +788,18 @@ if ("serviceWorker" in navigator) {
   });
 }
 </script>
+  <script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./service-worker.js")
+      .then(() => {
+        console.log("EMAK PWA başarıyla aktif edildi.");
+      })
+      .catch((error) => {
+        console.error("EMAK PWA hatası:", error);
+      });
+  });
+}
+</script>
 </body>
 </html>

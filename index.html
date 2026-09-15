@@ -403,6 +403,38 @@ const montajItems = [
 
 const DEFAULT_TESISAT = JSON.parse(JSON.stringify(tesisatItems));
 const DEFAULT_MONTAJ = JSON.parse(JSON.stringify(montajItems));
+const SANTIYE_TESISAT = [
+  {poz:1,desc:"ŞANTİYE PANOSU TEK SAYAÇLI",marka:"PROJEYE UYGUN",miktar:1,mat:0,lab:0},
+  {poz:2,desc:"4X25 A 300mA YANGIN KORUMA / KAÇAK AKIM",marka:"LEGRAND / SCHNEIDER",miktar:1,mat:0,lab:0},
+  {poz:3,desc:"4X20 A 10kA OTOMATİK SİGORTA",marka:"LEGRAND / SCHNEIDER",miktar:1,mat:0,lab:0},
+  {poz:4,desc:"4X40 A 30mA KAÇAK AKIM KORUMA",marka:"LEGRAND / SCHNEIDER",miktar:1,mat:0,lab:0},
+  {poz:5,desc:"KOMBİNASYON PANOSU ŞALT DAHİL",marka:"PROJEYE UYGUN",miktar:1,mat:0,lab:0},
+  {poz:6,desc:"4X10 mm² NYY ENERJİ KABLOSU",marka:"HES - NEXANS",miktar:0,mat:0,lab:0},
+  {poz:7,desc:"4X16 mm² ALVİNAL KABLO",marka:"HES - NEXANS",miktar:0,mat:0,lab:0},
+  {poz:8,desc:"Q32 KANGAL BORU",marka:"FIRAT / HES",miktar:0,mat:0,lab:0},
+  {poz:9,desc:"DELİKSİZ KABLO KANALI + KAPAK",marka:"PROJEYE UYGUN",miktar:0,mat:0,lab:0},
+  {poz:10,desc:"110 CM KABLO TOKASI",marka:"MUADİL",miktar:0,mat:0,lab:0},
+  {poz:11,desc:"TOPRAKLAMA KAZIĞI GALVANİZ",marka:"MUADİL",miktar:0,mat:0,lab:0},
+  {poz:12,desc:"AG/OG TOPRAKLAMA ŞERİDİ",marka:"MUADİL",miktar:0,mat:0,lab:0},
+  {poz:13,desc:"REÇİNE HUNİ / KABLO EK MALZEMESİ",marka:"MUADİL",miktar:0,mat:0,lab:0},
+  {poz:14,desc:"TEMEL TOPRAKLAMA GALVANİZ ŞERİT",marka:"MUADİL",miktar:0,mat:0,lab:0},
+  {poz:15,desc:"DEMİR - ŞERİT BAĞLANTI ELEMANI",marka:"MUADİL",miktar:0,mat:0,lab:0},
+  {poz:16,desc:"4X10 NYY EV / ŞANTİYE BESLEMESİ",marka:"HES - NEXANS",miktar:0,mat:0,lab:0},
+  {poz:17,desc:"5X2,5 NYY ÇEVRE AYDINLATMA",marka:"HES - NEXANS",miktar:0,mat:0,lab:0},
+  {poz:18,desc:"CAT6 KAMERA ALTYAPISI",marka:"HES - NEXANS",miktar:0,mat:0,lab:0},
+  {poz:19,desc:"FİBER OPTİK ALTYAPI",marka:"PROJEYE UYGUN",miktar:0,mat:0,lab:0},
+  {poz:20,desc:"RG6 TV/UYDU ALTYAPISI",marka:"HES - NEXANS",miktar:0,mat:0,lab:0},
+  {poz:21,desc:"ŞANTİYE / RUHSAT ELEKTRİK PROJELERİ",marka:"EMAK",miktar:1,mat:0,lab:0},
+  {poz:22,desc:"GENEL SARF MALZEME",marka:"MUHTELİF",miktar:1,mat:0,lab:0},
+  {poz:23,desc:"NAKLİYE",marka:"EMAK",miktar:1,mat:0,lab:0}
+];
+const SANTIYE_MONTAJ = [
+  {poz:1,desc:"ŞANTİYE PANOSU MONTAJ VE DEVREYE ALMA",marka:"EMAK",miktar:1,lab:0},
+  {poz:2,desc:"ENERJİ KABLOSU SERİM / MONTAJ",marka:"EMAK",miktar:0,lab:0},
+  {poz:3,desc:"TOPRAKLAMA TESİSATI MONTAJI",marka:"EMAK",miktar:1,lab:0},
+  {poz:4,desc:"ALTYAPI BORULAMA VE KABLOLAMA İŞÇİLİĞİ",marka:"EMAK",miktar:1,lab:0},
+  {poz:5,desc:"TEST, KONTROL VE ENERJİLENDİRME",marka:"EMAK",miktar:1,lab:0}
+];
 const FEATURES = [
   {id:'KNX',icon:'🏠',name:'KNX / Akıllı Ev'}, {id:'KLIMA',icon:'❄️',name:'Klima'},
   {id:'KLIMA_OTOMASYON',icon:'🌡️',name:'Klima Otomasyonu'}, {id:'YERDEN_ISITMA',icon:'♨️',name:'Yerden Isıtma'},
@@ -453,7 +485,7 @@ function ensureFeatureItems(){
     if(!exists) tesisatItems.push({poz:tesisatItems.length+1,desc,marka,miktar:1,mat:0,lab:0,feature:fid});
   }));
 }
-function itemVisible(it){ const f=it.feature || featureForExisting(it); return !f || selectedFeatures.includes(f); }
+function itemVisible(it){ if(currentModule==='santiye') return true; const f=it.feature || featureForExisting(it); return !f || selectedFeatures.includes(f); }
 
 let currentQuoteId = null;
 let quotes = JSON.parse(localStorage.getItem('emak_quotes') || '[]');
@@ -494,14 +526,18 @@ function showDashboard(){
   renderQuotes();
 }
 function showNewQuote(){
-  if(currentModule==='santiye'){ alert('Şantiye teklif motoru bir sonraki adımda, gönderdiğiniz şantiye Excel şablonuna göre bağlanacak.'); return; }
-  currentModule='villa'; currentQuoteId=null; selectedFeatures=[]; resetWorkingItems();
-  document.getElementById('quoteTitle').innerHTML='Yeni Teklif <span class="type-pill">KONUT / VİLLA</span>';
+  const isSite=currentModule==='santiye'; currentQuoteId=null; selectedFeatures=[];
+  if(isSite){
+    tesisatItems.splice(0,tesisatItems.length,...JSON.parse(JSON.stringify(SANTIYE_TESISAT)));
+    montajItems.splice(0,montajItems.length,...JSON.parse(JSON.stringify(SANTIYE_MONTAJ)));
+  } else { currentModule='villa'; resetWorkingItems(); }
+  document.getElementById('quoteTitle').innerHTML='Yeni Teklif <span class="type-pill">'+(isSite?'ŞANTİYE':'KONUT / VİLLA')+'</span>';
   document.getElementById('qCustomer').value=''; document.getElementById('qUnits').value=1;
   document.getElementById('qDate').value=new Date().toISOString().slice(0,10);
   document.getElementById('qOverhead').value=10; document.getElementById('qProfit').value=10; document.getElementById('qVat').value=20;
-  document.getElementById('qNotes').value='ANAHTAR PRİZ ÜRÜNLERİ FİYATA DAHİL EDİLMEMİŞTİR.\nAYDINLATMA ÜRÜNLERİ FİYATA DAHİL EDİLMEMİŞTİR.';
-  hideMainViews(); document.getElementById('quoteView').classList.remove('hidden'); updateFeatureSummary(); renderItems(); switchTab('tesisat'); recalc(); openFeatureModal();
+  document.getElementById('qNotes').value=isSite?'FİYATLAR PROJE, METRAJ VE SAHA ŞARTLARINA GÖRE DÜZENLENEBİLİR.':'ANAHTAR PRİZ ÜRÜNLERİ FİYATA DAHİL EDİLMEMİŞTİR.\nAYDINLATMA ÜRÜNLERİ FİYATA DAHİL EDİLMEMİŞTİR.';
+  document.getElementById('featureBar').style.display=isSite?'none':'flex'; document.getElementById('featureBtn').style.display=isSite?'none':'';
+  hideMainViews(); document.getElementById('quoteView').classList.remove('hidden'); updateFeatureSummary(); renderItems(); switchTab('tesisat'); recalc(); if(!isSite) openFeatureModal();
 }
 function openFeatureModal(){ pendingFeatures=[...selectedFeatures]; renderFeatureGrid(); document.getElementById('featureModal').classList.remove('hidden'); }
 function closeFeatureModal(){ document.getElementById('featureModal').classList.add('hidden'); }
@@ -509,7 +545,12 @@ function renderFeatureGrid(){
   document.getElementById('featureGrid').innerHTML=FEATURES.map(f=>`<div class="feature-card ${pendingFeatures.includes(f.id)?'selected':''}" onclick="togglePendingFeature('${f.id}')"><span class="fi">${f.icon}</span><span class="fn">${f.name}</span></div>`).join('');
 }
 function togglePendingFeature(id){ pendingFeatures=pendingFeatures.includes(id)?pendingFeatures.filter(x=>x!==id):[...pendingFeatures,id]; renderFeatureGrid(); }
-function applyFeatures(){ selectedFeatures=[...pendingFeatures]; ensureFeatureItems(); closeFeatureModal(); updateFeatureSummary(); renderItems(); recalc(); }
+function applyFeatures(){
+  const removed=selectedFeatures.filter(x=>!pendingFeatures.includes(x));
+  const edited=removed.some(fid=>tesisatItems.some(it=>it.feature===fid && ((+it.miktar||0)!==1 || (+it.mat||0)!==0 || (+it.lab||0)!==0)));
+  if(edited && !confirm('Kaldırdığınız özelliğe ait girilmiş metraj/fiyatlar var. Kalemler silinmeyecek, sadece teklif görünümünden gizlenecek. Devam edilsin mi?')) return;
+  selectedFeatures=[...pendingFeatures]; ensureFeatureItems(); closeFeatureModal(); updateFeatureSummary(); renderItems(); recalc();
+}
 function updateFeatureSummary(){
   const names=FEATURES.filter(f=>selectedFeatures.includes(f.id)).map(f=>f.name);
   document.getElementById('featureSummary').textContent=names.length?'Aktif: '+names.join(' • '):'Standart elektrik kalemleri';
@@ -706,7 +747,8 @@ function editQuote(idx) {
   // restore items
   tesisatItems.splice(0, tesisatItems.length, ...JSON.parse(JSON.stringify(q.tesisat || DEFAULT_TESISAT)));
   montajItems.splice(0, montajItems.length, ...JSON.parse(JSON.stringify(q.montaj || DEFAULT_MONTAJ)));
-  ensureFeatureItems(); updateFeatureSummary();
+  if(currentModule==='santiye') selectedFeatures=[]; else ensureFeatureItems(); updateFeatureSummary();
+  document.getElementById('featureBar').style.display=currentModule==='santiye'?'none':'flex'; document.getElementById('featureBtn').style.display=currentModule==='santiye'?'none':'';
   renderItems();
   document.getElementById('dashboardView').classList.add('hidden');
   document.getElementById('quoteView').classList.remove('hidden');

@@ -1,4 +1,4 @@
-const CACHE_NAME = "emak-teklif-v9";
+const CACHE_NAME = "emak-teklif-v10";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -6,10 +6,12 @@ const APP_SHELL = [
   "./icon-192.png",
   "./icon-512.png",
   "./jszip.min.js",
-  "./emak-template.xlsx"
+  "./emak-template.xlsx",
+  "./emak-logo.jpg",
+  "./hero-v10.png"
 ];
 self.addEventListener("install", event => {
-  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL.map(x => x + (x.includes('?')?'&':'?') + 'v=8'))).catch(()=>caches.open(CACHE_NAME).then(cache=>cache.addAll(APP_SHELL))));
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL.map(x => x + (x.includes('?')?'&':'?') + 'v=10'))).catch(()=>caches.open(CACHE_NAME).then(cache=>cache.addAll(APP_SHELL))));
   self.skipWaiting();
 });
 self.addEventListener("activate", event => {

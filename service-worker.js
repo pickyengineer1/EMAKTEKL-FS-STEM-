@@ -1,4 +1,4 @@
-const CACHE_NAME = "emak-teklif-v7";
+const CACHE_NAME = "emak-teklif-v9";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -9,7 +9,7 @@ const APP_SHELL = [
   "./emak-template.xlsx"
 ];
 self.addEventListener("install", event => {
-  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL.map(x => x + (x.includes('?')?'&':'?') + 'v=7'))).catch(()=>caches.open(CACHE_NAME).then(cache=>cache.addAll(APP_SHELL))));
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL.map(x => x + (x.includes('?')?'&':'?') + 'v=8'))).catch(()=>caches.open(CACHE_NAME).then(cache=>cache.addAll(APP_SHELL))));
   self.skipWaiting();
 });
 self.addEventListener("activate", event => {

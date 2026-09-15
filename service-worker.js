@@ -12,7 +12,6 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL))
   );
-
   self.skipWaiting();
 });
 
@@ -26,14 +25,12 @@ self.addEventListener("activate", (event) => {
       )
     )
   );
-
   self.clients.claim();
 });
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
-  // Sayfa açılışlarında önce internetten güncel sürümü almaya çalış.
   if (event.request.mode === "navigate") {
     event.respondWith(
       fetch(event.request)
@@ -54,7 +51,6 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Sadece kendi GitHub Pages dosyalarımızı önbelleğe al.
   const requestUrl = new URL(event.request.url);
 
   if (requestUrl.origin !== self.location.origin) {

@@ -1,4 +1,4 @@
-const CACHE_NAME = "emak-teklif-v2";
+const CACHE_NAME = "emak-teklif-v3";
 
 const APP_SHELL = [
   "./",

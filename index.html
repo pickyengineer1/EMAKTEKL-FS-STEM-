@@ -89,6 +89,23 @@
     .navbar { flex-direction:column; gap:10px; }
   }
 
+
+  /* V3 Ana menü + özellik seçimi */
+  .module-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:18px}
+  .module-card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:24px;cursor:pointer;transition:.2s;min-height:170px;display:flex;flex-direction:column;justify-content:space-between}
+  .module-card:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(15,23,42,.09);border-color:#cbd5e1}
+  .module-icon{font-size:2.2rem}.module-card h3{font-size:1.15rem;margin:10px 0 6px}.module-card p{color:var(--muted);font-size:.9rem;line-height:1.45}
+  .feature-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#fff7f7;border:1px solid #fecaca;border-radius:10px;padding:10px 14px;margin-bottom:16px}
+  .feature-summary{font-size:.85rem;color:#7f1d1d}
+  .modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.62);z-index:1000;display:flex;align-items:center;justify-content:center;padding:18px}
+  .modal-box{background:#fff;border-radius:16px;width:min(900px,100%);max-height:88vh;overflow:auto;padding:22px;box-shadow:0 24px 70px rgba(0,0,0,.3)}
+  .feature-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}
+  .feature-card{border:1px solid var(--border);border-radius:12px;padding:14px 10px;text-align:center;cursor:pointer;user-select:none;background:#fff;transition:.15s}
+  .feature-card.selected{border-color:var(--accent);background:#fff1f2;box-shadow:0 0 0 1px var(--accent) inset}
+  .feature-card .fi{font-size:1.55rem;display:block;margin-bottom:6px}.feature-card .fn{font-size:.82rem;font-weight:700}
+  .type-pill{display:inline-block;background:#111827;color:#fff;border-radius:20px;padding:4px 10px;font-size:.75rem;margin-left:8px}
+  @media(max-width:768px){.module-grid{grid-template-columns:1fr}.feature-grid{grid-template-columns:repeat(2,1fr)}.feature-bar{align-items:flex-start;flex-direction:column}}
+
   /* ========== PRINT STYLES ========== */
   @media print {
     body * { visibility: hidden; }
@@ -158,11 +175,21 @@
   </nav>
 
   <div class="main">
+    <!-- ANA MENÜ -->
+    <div id="homeView">
+      <div class="card-header" style="margin-bottom:8px;"><div><h2 style="font-size:1.55rem;">EMAK Teklif Sistemi</h2><p style="color:var(--muted);margin-top:5px;">Hazırlamak istediğiniz teklif türünü seçin.</p></div></div>
+      <div class="module-grid">
+        <div class="module-card" onclick="openModule('villa')"><div><div class="module-icon">🏠</div><h3>Konut / Villa Teklifi</h3><p>İç tesisat, otomasyon ve seçilen ev özelliklerine göre dinamik teklif.</p></div><strong>Tekliflere Gir →</strong></div>
+        <div class="module-card" onclick="openModule('santiye')"><div><div class="module-icon">🏗️</div><h3>Şantiye Teklifi</h3><p>İnşaat başlangıcı, geçici enerji, şantiye panosu, altyapı ve topraklama işleri.</p></div><strong>Şantiye Bölümüne Gir →</strong></div>
+        <div class="module-card" onclick="showAllQuotes()"><div><div class="module-icon">📁</div><h3>Tüm Teklifler</h3><p>Konut/Villa ve Şantiye tekliflerini tek listede görüntüleyin.</p></div><strong>Kayıtları Aç →</strong></div>
+      </div>
+    </div>
+
     <!-- DASHBOARD -->
-    <div id="dashboardView">
+    <div id="dashboardView" class="hidden">
       <div class="card-header" style="margin-bottom:20px;">
-        <h2 style="font-size:1.5rem;">Teklifler</h2>
-        <button class="btn btn-primary" onclick="showNewQuote()">+ Yeni Teklif</button>
+        <div><button class="btn btn-outline btn-sm" onclick="showHome()" style="margin-bottom:8px;">← Ana Menü</button><h2 style="font-size:1.5rem;" id="dashboardTitle">Konut / Villa Teklifleri</h2></div>
+        <button class="btn btn-primary" id="newQuoteBtn" onclick="showNewQuote()">+ Yeni Teklif</button>
       </div>
       <div class="card">
         <table>
@@ -187,10 +214,13 @@
         <h2 style="font-size:1.5rem;" id="quoteTitle">Yeni Teklif</h2>
         <div style="display:flex;gap:10px;">
           <button class="btn btn-outline" onclick="showDashboard()">← Geri</button>
+          <button class="btn btn-outline" id="featureBtn" onclick="openFeatureModal()">⚙️ Ev Özellikleri</button>
           <button class="btn btn-dark" onclick="saveQuote()">Kaydet</button>
           <button class="btn btn-primary" onclick="printQuote()">PDF / Yazdır</button>
         </div>
       </div>
+
+      <div class="feature-bar" id="featureBar"><div><strong>🏠 Konut / Villa</strong><div class="feature-summary" id="featureSummary">Standart elektrik kalemleri</div></div><button class="btn btn-outline btn-sm" onclick="openFeatureModal()">Özellikleri Değiştir</button></div>
 
       <!-- Project Info -->
       <div class="card">
@@ -320,6 +350,15 @@ AYDINLATMA ÜRÜNLERİ FİYATA DAHİL EDİLMEMİŞTİR.</textarea>
   </div>
 </div>
 
+<!-- EV ÖZELLİKLERİ MODALI -->
+<div id="featureModal" class="modal-backdrop hidden" onclick="if(event.target===this) closeFeatureModal()">
+  <div class="modal-box">
+    <div class="card-header"><div><h3>Ev Özellikleri</h3><p style="color:var(--muted);font-size:.88rem;margin-top:4px;">Seçtiğiniz özelliklere bağlı teklif kalemleri otomatik görünür. Fiyat ve metrajları teklif içinde değiştirebilirsiniz.</p></div><button class="btn btn-outline btn-sm" onclick="closeFeatureModal()">✕</button></div>
+    <div class="feature-grid" id="featureGrid"></div>
+    <div style="display:flex;justify-content:flex-end;gap:10px;"><button class="btn btn-outline" onclick="closeFeatureModal()">İptal</button><button class="btn btn-primary" onclick="applyFeatures()">Seçimleri Uygula</button></div>
+  </div>
+</div>
+
 <script>
 // ========== DATA ==========
 const tesisatItems = [
@@ -362,6 +401,60 @@ const montajItems = [
   {poz:14, desc:"LED MONTAJI", marka:"İŞVEREN", miktar:3, lab:350},
 ];
 
+const DEFAULT_TESISAT = JSON.parse(JSON.stringify(tesisatItems));
+const DEFAULT_MONTAJ = JSON.parse(JSON.stringify(montajItems));
+const FEATURES = [
+  {id:'KNX',icon:'🏠',name:'KNX / Akıllı Ev'}, {id:'KLIMA',icon:'❄️',name:'Klima'},
+  {id:'KLIMA_OTOMASYON',icon:'🌡️',name:'Klima Otomasyonu'}, {id:'YERDEN_ISITMA',icon:'♨️',name:'Yerden Isıtma'},
+  {id:'PANJUR',icon:'🪟',name:'Panjur'}, {id:'STOR',icon:'🪟',name:'Elektrikli Stor'},
+  {id:'ARAC_SARJ',icon:'🚗',name:'Araç Şarj'}, {id:'ISI_POMPASI',icon:'🔥',name:'Isı Pompası'},
+  {id:'HAVUZ',icon:'🏊',name:'Havuz'}, {id:'BAHCE',icon:'🌳',name:'Bahçe / Peyzaj'},
+  {id:'KAMERA',icon:'📹',name:'Kamera'}, {id:'ALARM',icon:'🛡️',name:'Alarm / Güvenlik'},
+  {id:'YANGIN',icon:'🔥',name:'Yangın İhbar'}, {id:'DATA',icon:'🌐',name:'Data / Wi-Fi'},
+  {id:'TV',icon:'📺',name:'TV / Uydu'}, {id:'DIAFON',icon:'🚪',name:'Diafon / Interkom'},
+  {id:'GUNES',icon:'☀️',name:'Güneş Enerjisi'}, {id:'OTOMATIK_KAPI',icon:'🚧',name:'Otomatik Kapı'},
+  {id:'HIDROFOR',icon:'💧',name:'Hidrofor'}, {id:'BOYLER',icon:'🚿',name:'Boyler'},
+  {id:'SIRKULASYON',icon:'🔄',name:'Sirkülasyon Pompası'}, {id:'TOUCH_PANEL',icon:'🖥️',name:'Touch Panel'}
+];
+const FEATURE_ITEMS = {
+  KNX:[['OTOMASYON AYDINLATMA SORTİSİ','HES - NEXANS'],['INSTABUS HATTI (2x2x0,8 JH(st)H)','EAE / KNX'],['KNX POWER SUPPLY 640mA','EAE'],['KNX ROOM CONTROL UNIT / AKTÜATÖR','EAE'],['MÜHENDİSLİK - DEVREYE ALMA - PROJE ÇİZİMİ','EMAK']],
+  KLIMA:[['KLİMA İÇ ÜNİTE SORTİ','HES - NEXANS'],['KLİMA DIŞ ÜNİTE SORTİ','HES - NEXANS'],['KLİMA TERMOSTAT SORTİ','HES - NEXANS']],
+  KLIMA_OTOMASYON:[['KLİMA TERMOSTAT MONTAJ VE BAĞLANTISI','EMAK'],['DAIKIN VRV - KNX CLIMATE GATEWAY','KNX']],
+  YERDEN_ISITMA:[['YERDEN ISITMA TERMOSTAT SORTİ','HES - NEXANS'],['YERDEN ISITMA TERMOSTAT MONTAJ VE BAĞLANTISI','EMAK'],['KOLLEKTÖR SORTİ','HES - NEXANS']],
+  PANJUR:[['PANJUR SORTİ','HES - NEXANS']], STOR:[['STOR SORTİ','HES - NEXANS']],
+  ARAC_SARJ:[['ARAÇ ŞARJ İSTASYONU BESLEMESİ','HES - NEXANS']], ISI_POMPASI:[['ISI POMPASI BESLEMESİ','HES - NEXANS'],['ISI POMPASI REZİSTANS BESLEMESİ','HES - NEXANS']],
+  HAVUZ:[['HAVUZ MEKANİK BESLEMESİ','HES - NEXANS']], BAHCE:[['BAHÇE PEYZAJ KABLOLAMA','HES - NEXANS']],
+  KAMERA:[['KAMERA TESİSATI SORTİSİ CAT6','HES - NEXANS']], ALARM:[['GÜVENLİK TESİSATI SORTİSİ (PIR)','HES - NEXANS']],
+  YANGIN:[['YANGIN İHBAR SORTİSİ','HES - NEXANS']], DATA:[['DATA SORTİ CAT6','HES - NEXANS'],['ACCESS POINT SORTİ','HES - NEXANS']],
+  TV:[['TV SORTİ RG6','HES - NEXANS'],['TV ÇANAK BESLEME','HES - NEXANS']], DIAFON:[['GÖRÜNTÜLÜ DİYAFON KUVVETLİ AKIM SORTİ','HES - NEXANS'],['GÖRÜNTÜLÜ DİYAFON CAT6 SORTİ','HES - NEXANS']],
+  GUNES:[['ÇATI GÜNEŞ ENERJİSİ / PANEL BESLEMESİ','HES - NEXANS']], OTOMATIK_KAPI:[['OTOMATİK KAPI BESLEMESİ','HES - NEXANS']],
+  HIDROFOR:[['HİDROFOR BESLEME','HES - NEXANS']], BOYLER:[['BOYLER BESLEME','HES - NEXANS']],
+  SIRKULASYON:[['SİRKÜLASYON / RESİRKÜLASYON POMPASI SORTİSİ','HES - NEXANS']], TOUCH_PANEL:[['TOUCH PANEL BESLEME SORTİ','HES - NEXANS'],['TOUCH PANEL BUS / CAT6 ALTYAPISI','HES - NEXANS'],['10.1” TOUCH PANEL','EAE / AKUVOX']]
+};
+let currentModule = 'villa';
+let selectedFeatures = [];
+let pendingFeatures = [];
+
+function resetWorkingItems(){
+  tesisatItems.splice(0, tesisatItems.length, ...JSON.parse(JSON.stringify(DEFAULT_TESISAT)));
+  montajItems.splice(0, montajItems.length, ...JSON.parse(JSON.stringify(DEFAULT_MONTAJ)));
+}
+function featureForExisting(it){
+  const d=(it.desc||'').toUpperCase();
+  if(d.includes('KLİMA')||d.includes('KILİMA')) return 'KLIMA';
+  if(d.includes('DİAFON')||d.includes('DIAFON')) return 'DIAFON';
+  if(d.includes('DATA')) return 'DATA';
+  if(d.includes('TV SORT')) return 'TV';
+  return null;
+}
+function ensureFeatureItems(){
+  selectedFeatures.forEach(fid => (FEATURE_ITEMS[fid]||[]).forEach(([desc,marka])=>{
+    const exists=tesisatItems.some(x => (x.desc||'').toUpperCase()===desc.toUpperCase());
+    if(!exists) tesisatItems.push({poz:tesisatItems.length+1,desc,marka,miktar:1,mat:0,lab:0,feature:fid});
+  }));
+}
+function itemVisible(it){ const f=it.feature || featureForExisting(it); return !f || selectedFeatures.includes(f); }
+
 let currentQuoteId = null;
 let quotes = JSON.parse(localStorage.getItem('emak_quotes') || '[]');
 
@@ -373,7 +466,7 @@ function doLogin() {
     document.getElementById('loginPage').style.display = 'none';
     document.getElementById('app').classList.add('active');
     document.getElementById('currentUser').textContent = u;
-    renderQuotes();
+    showHome();
   } else {
     alert('Hatalı kullanıcı adı veya şifre');
   }
@@ -384,26 +477,42 @@ function doLogout() {
 }
 
 // ========== NAV ==========
-function showDashboard() {
-  document.getElementById('dashboardView').classList.remove('hidden');
-  document.getElementById('quoteView').classList.add('hidden');
+function hideMainViews(){ ['homeView','dashboardView','quoteView'].forEach(id=>document.getElementById(id)?.classList.add('hidden')); }
+function showHome(){ hideMainViews(); document.getElementById('homeView').classList.remove('hidden'); }
+function openModule(type){ currentModule=type; if(type==='santiye'){ showSantiyeDashboard(); return; } showDashboard(); }
+function showAllQuotes(){ currentModule='all'; showDashboard(); }
+function showSantiyeDashboard(){
+  currentModule='santiye'; hideMainViews(); document.getElementById('dashboardView').classList.remove('hidden');
+  document.getElementById('dashboardTitle').textContent='Şantiye Teklifleri';
+  document.getElementById('newQuoteBtn').textContent='+ Yeni Şantiye Teklifi';
   renderQuotes();
 }
-function showNewQuote() {
-  currentQuoteId = null;
-  document.getElementById('quoteTitle').textContent = 'Yeni Teklif';
-  document.getElementById('qCustomer').value = '';
-  document.getElementById('qUnits').value = 18;
-  document.getElementById('qDate').value = new Date().toISOString().slice(0,10);
-  document.getElementById('qOverhead').value = 10;
-  document.getElementById('qProfit').value = 10;
-  document.getElementById('qVat').value = 20;
-  document.getElementById('qNotes').value = 'ANAHTAR PRİZ ÜRÜNLERİ FİYATA DAHİL EDİLMEMİŞTİR.\nAYDINLATMA ÜRÜNLERİ FİYATA DAHİL EDİLMEMİŞTİR.';
-  renderItems();
-  document.getElementById('dashboardView').classList.add('hidden');
-  document.getElementById('quoteView').classList.remove('hidden');
-  switchTab('tesisat');
-  recalc();
+function showDashboard(){
+  hideMainViews(); document.getElementById('dashboardView').classList.remove('hidden');
+  document.getElementById('dashboardTitle').textContent=currentModule==='all'?'Tüm Teklifler':'Konut / Villa Teklifleri';
+  document.getElementById('newQuoteBtn').textContent=currentModule==='santiye'?'+ Yeni Şantiye Teklifi':'+ Yeni Teklif';
+  renderQuotes();
+}
+function showNewQuote(){
+  if(currentModule==='santiye'){ alert('Şantiye teklif motoru bir sonraki adımda, gönderdiğiniz şantiye Excel şablonuna göre bağlanacak.'); return; }
+  currentModule='villa'; currentQuoteId=null; selectedFeatures=[]; resetWorkingItems();
+  document.getElementById('quoteTitle').innerHTML='Yeni Teklif <span class="type-pill">KONUT / VİLLA</span>';
+  document.getElementById('qCustomer').value=''; document.getElementById('qUnits').value=1;
+  document.getElementById('qDate').value=new Date().toISOString().slice(0,10);
+  document.getElementById('qOverhead').value=10; document.getElementById('qProfit').value=10; document.getElementById('qVat').value=20;
+  document.getElementById('qNotes').value='ANAHTAR PRİZ ÜRÜNLERİ FİYATA DAHİL EDİLMEMİŞTİR.\nAYDINLATMA ÜRÜNLERİ FİYATA DAHİL EDİLMEMİŞTİR.';
+  hideMainViews(); document.getElementById('quoteView').classList.remove('hidden'); updateFeatureSummary(); renderItems(); switchTab('tesisat'); recalc(); openFeatureModal();
+}
+function openFeatureModal(){ pendingFeatures=[...selectedFeatures]; renderFeatureGrid(); document.getElementById('featureModal').classList.remove('hidden'); }
+function closeFeatureModal(){ document.getElementById('featureModal').classList.add('hidden'); }
+function renderFeatureGrid(){
+  document.getElementById('featureGrid').innerHTML=FEATURES.map(f=>`<div class="feature-card ${pendingFeatures.includes(f.id)?'selected':''}" onclick="togglePendingFeature('${f.id}')"><span class="fi">${f.icon}</span><span class="fn">${f.name}</span></div>`).join('');
+}
+function togglePendingFeature(id){ pendingFeatures=pendingFeatures.includes(id)?pendingFeatures.filter(x=>x!==id):[...pendingFeatures,id]; renderFeatureGrid(); }
+function applyFeatures(){ selectedFeatures=[...pendingFeatures]; ensureFeatureItems(); closeFeatureModal(); updateFeatureSummary(); renderItems(); recalc(); }
+function updateFeatureSummary(){
+  const names=FEATURES.filter(f=>selectedFeatures.includes(f.id)).map(f=>f.name);
+  document.getElementById('featureSummary').textContent=names.length?'Aktif: '+names.join(' • '):'Standart elektrik kalemleri';
 }
 
 function switchTab(name) {
@@ -417,7 +526,7 @@ function switchTab(name) {
 // ========== RENDER ==========
 function renderItems() {
   const tBody = document.getElementById('tesisatBody');
-  tBody.innerHTML = tesisatItems.map((it,i) => `
+  tBody.innerHTML = tesisatItems.map((it,i) => ({it,i})).filter(x => itemVisible(x.it)).map(({it,i}) => `
     <tr class="item-row">
       <td>${it.poz}</td>
       <td style="max-width:280px;"><input type="text" value="${it.desc}" data-type="tesisat" data-idx="${i}" data-field="desc" onchange="updateItem(this)" style="width:100%;padding:4px 6px;border:1px solid #e2e8f0;border-radius:4px;font-size:.82rem;"></td>
@@ -468,6 +577,7 @@ function recalc() {
   let matTotal = 0, labTotal = 0;
 
   tesisatItems.forEach((it,i) => {
+    if(!itemVisible(it)) return;
     const base = (it.mat + it.lab) * it.miktar;
     const oh = base * ohRate;
     const pr = base * prRate;
@@ -493,7 +603,7 @@ function recalc() {
   const tesisatUnit = (matTotal + (labTotal - montajLab)) * (1 + ohRate + prRate); // approx
   // Better recalculation
   let tMat=0, tLab=0, mLab=0;
-  tesisatItems.forEach(it => { tMat += it.mat*it.miktar; tLab += it.lab*it.miktar; });
+  tesisatItems.filter(itemVisible).forEach(it => { tMat += it.mat*it.miktar; tLab += it.lab*it.miktar; });
   montajItems.forEach(it => { mLab += it.lab*it.miktar; });
 
   const tBase = tMat + tLab;
@@ -535,7 +645,9 @@ function renderQuotes() {
     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:40px;">Henüz teklif yok. Yeni teklif oluşturun.</td></tr>';
     return;
   }
-  tbody.innerHTML = quotes.map((q,i) => `
+  const visibleQuotes = quotes.map((q,i)=>({q,i})).filter(x => currentModule==='all' || (x.q.type||'villa')===currentModule);
+  if(visibleQuotes.length===0){ tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:40px;">Bu bölümde henüz teklif yok.</td></tr>'; return; }
+  tbody.innerHTML = visibleQuotes.map(({q,i}) => `
     <tr>
       <td>${q.date}</td>
       <td><strong>${q.customer}</strong></td>
@@ -562,6 +674,8 @@ function saveQuote() {
     notes: document.getElementById('qNotes').value,
     grand: totals.grand,
     status: 'draft',
+    type: currentModule==='santiye'?'santiye':'villa',
+    features: [...selectedFeatures],
     tesisat: JSON.parse(JSON.stringify(tesisatItems)),
     montaj: JSON.parse(JSON.stringify(montajItems))
   };
@@ -579,7 +693,9 @@ function saveQuote() {
 function editQuote(idx) {
   const q = quotes[idx];
   currentQuoteId = q.id;
-  document.getElementById('quoteTitle').textContent = 'Teklif Düzenle';
+  currentModule = q.type || 'villa';
+  selectedFeatures = q.features ? [...q.features] : [...new Set((q.tesisat||[]).map(featureForExisting).filter(Boolean))];
+  document.getElementById('quoteTitle').innerHTML = 'Teklif Düzenle <span class="type-pill">'+(currentModule==='santiye'?'ŞANTİYE':'KONUT / VİLLA')+'</span>';
   document.getElementById('qCustomer').value = q.customer;
   document.getElementById('qUnits').value = q.units;
   document.getElementById('qDate').value = q.date;
@@ -588,8 +704,9 @@ function editQuote(idx) {
   document.getElementById('qVat').value = q.vat;
   document.getElementById('qNotes').value = q.notes;
   // restore items
-  q.tesisat.forEach((it,i) => { if(tesisatItems[i]) Object.assign(tesisatItems[i], it); });
-  q.montaj.forEach((it,i) => { if(montajItems[i]) Object.assign(montajItems[i], it); });
+  tesisatItems.splice(0, tesisatItems.length, ...JSON.parse(JSON.stringify(q.tesisat || DEFAULT_TESISAT)));
+  montajItems.splice(0, montajItems.length, ...JSON.parse(JSON.stringify(q.montaj || DEFAULT_MONTAJ)));
+  ensureFeatureItems(); updateFeatureSummary();
   renderItems();
   document.getElementById('dashboardView').classList.add('hidden');
   document.getElementById('quoteView').classList.remove('hidden');
@@ -617,7 +734,7 @@ function printQuote() {
   // Tesisat table
   let tMat=0, tLab=0;
   const tBody = document.querySelector('#printTesisatTable tbody');
-  tBody.innerHTML = tesisatItems.filter(it => it.miktar > 0).map(it => {
+  tBody.innerHTML = tesisatItems.filter(it => itemVisible(it) && it.miktar > 0).map(it => {
     const base = (it.mat + it.lab) * it.miktar;
     const total = base * (1 + ohRate + prRate);
     tMat += it.mat * it.miktar;

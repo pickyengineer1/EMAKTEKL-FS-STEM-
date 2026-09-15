@@ -759,42 +759,31 @@ function editQuote(idx) {
 }
 
 function xmlEscape(v){ return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function exportExcel(){
-  const totals=recalc();
-  const customer=document.getElementById('qCustomer').value || 'İsimsiz Proje';
-  const date=document.getElementById('qDate').value || '';
-  const units=+document.getElementById('qUnits').value || 1;
-  const oh=+document.getElementById('qOverhead').value || 0;
-  const pr=+document.getElementById('qProfit').value || 0;
-  const vat=+document.getElementById('qVat').value || 0;
-  const notes=document.getElementById('qNotes').value || '';
-  const rate=1+(oh/100)+(pr/100);
-  const rows=[];
-  rows.push(`<tr><th colspan="7" style="font-size:16pt;background:#b91c1c;color:#fff">EMAK ELEKTRİK MAKİNA TESİSAT SAN. LTD. ŞTİ.</th></tr>`);
-  rows.push(`<tr><th colspan="7" style="font-size:13pt">${xmlEscape(currentModule==='santiye'?'ŞANTİYE ELEKTRİK İŞLERİ FİYAT TEKLİFİ':'ELEKTRİK İÇ TESİSAT İŞLERİ FİYAT TEKLİFİ')}</th></tr>`);
-  rows.push(`<tr><td><b>Müşteri / Proje</b></td><td colspan="3">${xmlEscape(customer)}</td><td><b>Tarih</b></td><td colspan="2">${xmlEscape(date)}</td></tr>`);
-  rows.push(`<tr><td><b>Bağımsız Bölüm</b></td><td>${units}</td><td><b>Genel Gider %</b></td><td>${oh}</td><td><b>Firma Kârı %</b></td><td>${pr}</td><td><b>KDV % ${vat}</b></td></tr>`);
-  rows.push(`<tr><th>POZ</th><th>AÇIKLAMA</th><th>MARKA</th><th>BİRİM</th><th>MİKTAR</th><th>BİRİM FİYAT</th><th>TOPLAM</th></tr>`);
-  rows.push(`<tr><th colspan="7" style="background:#e5e7eb">İÇ TESİSAT / MALZEME + İŞÇİLİK</th></tr>`);
-  tesisatItems.filter(it=>itemVisible(it)&&(+it.miktar||0)>0).forEach(it=>{
-    const bf=(+it.mat||0)+(+it.lab||0), total=bf*(+it.miktar||0)*rate;
-    rows.push(`<tr><td>${it.poz}</td><td>${xmlEscape(it.desc)}</td><td>${xmlEscape(it.marka)}</td><td>${xmlEscape(it.unit||'Adet')}</td><td>${+it.miktar||0}</td><td>${bf.toFixed(2)}</td><td>${total.toFixed(2)}</td></tr>`);
-  });
-  rows.push(`<tr><th colspan="7" style="background:#e5e7eb">MONTAJ</th></tr>`);
-  montajItems.filter(it=>(+it.miktar||0)>0).forEach(it=>{
-    const bf=+it.lab||0,total=bf*(+it.miktar||0)*rate;
-    rows.push(`<tr><td>${it.poz}</td><td>${xmlEscape(it.desc)}</td><td>${xmlEscape(it.marka)}</td><td>${xmlEscape(it.unit||'Adet')}</td><td>${+it.miktar||0}</td><td>${bf.toFixed(2)}</td><td>${total.toFixed(2)}</td></tr>`);
-  });
-  rows.push(`<tr><th colspan="6">BİRİM TOPLAMI</th><th>${totals.unitTotal.toFixed(2)}</th></tr>`);
-  rows.push(`<tr><th colspan="6">ARA TOPLAM (${units} bağımsız bölüm)</th><th>${totals.subTotal.toFixed(2)}</th></tr>`);
-  rows.push(`<tr><th colspan="6">KDV %${vat}</th><th>${totals.vat.toFixed(2)}</th></tr>`);
-  rows.push(`<tr><th colspan="6" style="font-size:13pt">GENEL TOPLAM</th><th style="font-size:13pt">${totals.grand.toFixed(2)} TL</th></tr>`);
-  rows.push(`<tr><td colspan="7"><b>NOTLAR:</b><br>${xmlEscape(notes).replace(/\n/g,'<br>')}</td></tr>`);
-  const html=`<!doctype html><html><head><meta charset="UTF-8"><style>table{border-collapse:collapse;font-family:Arial}td,th{border:1px solid #999;padding:6px}th{font-weight:bold}</style></head><body><table>${rows.join('')}</table></body></html>`;
-  const blob=new Blob(['\ufeff',html],{type:'application/vnd.ms-excel;charset=utf-8'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-  const safe=customer.replace(/[^a-zA-Z0-9çğıöşüÇĞİÖŞÜ_-]+/g,'_').slice(0,50);
-  a.download=`EMAK_${safe}_${date||'teklif'}.xls`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+function crc32(bytes){let c=0xffffffff;for(let i=0;i<bytes.length;i++){c^=bytes[i];for(let k=0;k<8;k++)c=(c>>>1)^((c&1)?0xedb88320:0);}return (c^0xffffffff)>>>0;}
+function u16(a,o){return a[o]|(a[o+1]<<8)} function u32(a,o){return (a[o]|(a[o+1]<<8)|(a[o+2]<<16)|(a[o+3]<<24))>>>0}
+function put16(a,v){a.push(v&255,(v>>>8)&255)} function put32(a,v){a.push(v&255,(v>>>8)&255,(v>>>16)&255,(v>>>24)&255)}
+function readStoredZip(buf){const a=new Uint8Array(buf), dec=new TextDecoder(), out={};let p=0;while(p+30<=a.length&&u32(a,p)===0x04034b50){const method=u16(a,p+8),cs=u32(a,p+18),nl=u16(a,p+26),el=u16(a,p+28),name=dec.decode(a.slice(p+30,p+30+nl));const st=p+30+nl+el;if(method!==0)throw new Error('EMAK şablonu sıkıştırma biçimi desteklenmiyor.');out[name]=a.slice(st,st+cs);p=st+cs;}return out;}
+function makeStoredZip(files){const enc=new TextEncoder(), chunks=[], central=[];let off=0;for(const [name,data0] of Object.entries(files)){const data=data0 instanceof Uint8Array?data0:enc.encode(data0),nb=enc.encode(name),crc=crc32(data),h=[];put32(h,0x04034b50);put16(h,20);put16(h,0);put16(h,0);put16(h,0);put16(h,0);put32(h,crc);put32(h,data.length);put32(h,data.length);put16(h,nb.length);put16(h,0);const local=new Uint8Array(h.length+nb.length+data.length);local.set(h,0);local.set(nb,h.length);local.set(data,h.length+nb.length);chunks.push(local);const c=[];put32(c,0x02014b50);put16(c,20);put16(c,20);put16(c,0);put16(c,0);put16(c,0);put16(c,0);put32(c,crc);put32(c,data.length);put32(c,data.length);put16(c,nb.length);put16(c,0);put16(c,0);put16(c,0);put16(c,0);put32(c,0);put32(c,off);const ce=new Uint8Array(c.length+nb.length);ce.set(c,0);ce.set(nb,c.length);central.push(ce);off+=local.length;}const csize=central.reduce((s,x)=>s+x.length,0),end=[];put32(end,0x06054b50);put16(end,0);put16(end,0);put16(end,central.length);put16(end,central.length);put32(end,csize);put32(end,off);put16(end,0);return new Blob([...chunks,...central,new Uint8Array(end)],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});}
+function setXlsxCell(xml,ref,value,type='n',formula=null){const re=new RegExp(`<c\\b([^>]*\\br="${ref}"[^>]*)>[\\s\\S]*?<\\/c>`);const m=xml.match(re);if(!m)return xml;const attrs=m[1],sm=attrs.match(/\\bs="([^"]+)"/),s=sm?` s="${sm[1]}"`:'';let body='';if(formula!==null)body=`<f>${xmlEscape(formula)}</f>`;if(type==='s')body+=`<is><t xml:space="preserve">${xmlEscape(value)}</t></is>`;else body+=`<v>${Number(value)||0}</v>`;return xml.replace(re,`<c r="${ref}"${s}${type==='s'?' t="inlineStr"':''}>${body}</c>`);}
+function excelSerial(dateStr){const d=new Date((dateStr||new Date().toISOString().slice(0,10))+'T00:00:00Z');return Math.floor((d-Date.UTC(1899,11,30))/86400000);}
+async function exportExcel(){
+  try{
+    const totals=recalc(), customer=document.getElementById('qCustomer').value||'İsimsiz Proje',date=document.getElementById('qDate').value||'',units=+document.getElementById('qUnits').value||1,oh=(+document.getElementById('qOverhead').value||0)/100,pr=(+document.getElementById('qProfit').value||0)/100,vat=(+document.getElementById('qVat').value||0)/100,notes=document.getElementById('qNotes').value||'';
+    if(currentModule==='santiye'){alert('Şantiye için ayrı EMAK şablonu v7 aşamasında bağlanacak. Bu şablon Konut / Villa teklifleri içindir.');return;}
+    const items=tesisatItems.filter(it=>itemVisible(it)&&(+it.miktar||0)>0), mounts=montajItems.filter(it=>(+it.miktar||0)>0);
+    if(items.length>20){alert(`EMAK şablonunda 20 iç tesisat kalemi alanı var. Şu an ${items.length} aktif kalem bulunuyor. Fazla kalemleri azaltın veya ayrı bölüm şablonu kullanın.`);return;}
+    if(mounts.length>14){alert('EMAK şablonunda 14 montaj kalemi alanı var.');return;}
+    const r=await fetch('./emak-template.xlsx?v=6'); if(!r.ok)throw new Error('EMAK Excel şablonu bulunamadı.'); const files=readStoredZip(await r.arrayBuffer()),dec=new TextDecoder(),enc=new TextEncoder();
+    let s1=dec.decode(files['xl/worksheets/sheet1.xml']),s2=dec.decode(files['xl/worksheets/sheet2.xml']),s3=dec.decode(files['xl/worksheets/sheet3.xml']);
+    const project=(customer+' ELEKTRİK İÇ TESİSAT İŞLERİ').toUpperCase(); s1=setXlsxCell(s1,'C3',project,'s');s1=setXlsxCell(s1,'J3',excelSerial(date),'n');s1=setXlsxCell(s1,'I6',units);s1=setXlsxCell(s1,'I7',units);s1=setXlsxCell(s1,'J9',0,'n',`J8*${vat}`);
+    const nl=notes.split(/\r?\n/).filter(Boolean);s1=setXlsxCell(s1,'B13',nl[0]||'','s');s1=setXlsxCell(s1,'B14',nl.slice(1).join(' ')||'','s');
+    s2=setXlsxCell(s2,'L3',oh);s2=setXlsxCell(s2,'N3',pr); const slots=[8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,26,27,30,31];
+    slots.forEach((row,i)=>{const it=items[i]||{desc:'',marka:'',miktar:0,mat:0,lab:0,unit:'Ad'};s2=setXlsxCell(s2,'C'+row,i+1);s2=setXlsxCell(s2,'D'+row,it.desc||'','s');s2=setXlsxCell(s2,'E'+row,it.marka||'','s');s2=setXlsxCell(s2,'F'+row,+it.miktar||0);s2=setXlsxCell(s2,'G'+row,it.unit||'Ad','s');s2=setXlsxCell(s2,'H'+row,+it.mat||0);s2=setXlsxCell(s2,'J'+row,+it.lab||0);});
+    s3=setXlsxCell(s3,'K3',oh);s3=setXlsxCell(s3,'M3',pr); const mslots=[8,9,10,11,12,13,14,15,16,17,18,21,22,23];
+    mslots.forEach((row,i)=>{const it=mounts[i]||{desc:'',marka:'',miktar:0,mat:0,lab:0,unit:'Ad'};s3=setXlsxCell(s3,'B'+row,i+1);s3=setXlsxCell(s3,'C'+row,it.desc||'','s');s3=setXlsxCell(s3,'D'+row,it.marka||'','s');s3=setXlsxCell(s3,'E'+row,+it.miktar||0);s3=setXlsxCell(s3,'F'+row,it.unit||'Ad','s');s3=setXlsxCell(s3,'G'+row,+it.mat||0);s3=setXlsxCell(s3,'I'+row,+it.lab||0);});
+    files['xl/worksheets/sheet1.xml']=enc.encode(s1);files['xl/worksheets/sheet2.xml']=enc.encode(s2);files['xl/worksheets/sheet3.xml']=enc.encode(s3);delete files['xl/calcChain.xml'];
+    if(files['xl/_rels/workbook.xml.rels']){let rel=dec.decode(files['xl/_rels/workbook.xml.rels']);rel=rel.replace(/<Relationship[^>]*calcChain[^>]*\/>/g,'');files['xl/_rels/workbook.xml.rels']=enc.encode(rel);} const blob=makeStoredZip(files),a=document.createElement('a'),safe=customer.replace(/[^a-zA-Z0-9çğıöşüÇĞİÖŞÜ_-]+/g,'_').slice(0,50);a.href=URL.createObjectURL(blob);a.download=`EMAK_${safe}_${date||'teklif'}.xlsx`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1500);
+  }catch(e){console.error(e);alert('EMAK Excel oluşturulamadı: '+e.message);}
 }
 
 function printQuote() {

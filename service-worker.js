@@ -1,77 +1,32 @@
-const CACHE_NAME = "emak-teklif-v6";
-
+const CACHE_NAME = "emak-teklif-v7";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./manifest.json",
   "./icon-192.png",
-  "./icon-512.png"
+  "./icon-512.png",
+  "./jszip.min.js",
+  "./emak-template.xlsx"
 ];
-
-self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL))
-  );
+self.addEventListener("install", event => {
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL.map(x => x + (x.includes('?')?'&':'?') + 'v=7'))).catch(()=>caches.open(CACHE_NAME).then(cache=>cache.addAll(APP_SHELL))));
   self.skipWaiting();
 });
-
-self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys
-          .filter((key) => key !== CACHE_NAME)
-          .map((key) => caches.delete(key))
-      )
-    )
-  );
+self.addEventListener("activate", event => {
+  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))));
   self.clients.claim();
 });
-
-self.addEventListener("fetch", (event) => {
-  if (event.request.method !== "GET") return;
-
-  if (event.request.mode === "navigate") {
-    event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          if (response.ok) {
-            const copy = response.clone();
-
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put("./index.html", copy);
-            });
-          }
-
-          return response;
-        })
-        .catch(() => caches.match("./index.html"))
-    );
-
-    return;
+self.addEventListener("fetch", event => {
+  if(event.request.method !== "GET") return;
+  const url=new URL(event.request.url);
+  if(url.origin !== self.location.origin) return;
+  const important = event.request.mode === "navigate" || url.pathname.endsWith('/index.html') || url.pathname.endsWith('/emak-template.xlsx') || url.pathname.endsWith('/jszip.min.js');
+  if(important){
+    event.respondWith(fetch(event.request,{cache:'no-store'}).then(resp=>{
+      if(resp.ok){const copy=resp.clone();caches.open(CACHE_NAME).then(c=>c.put(event.request,copy));}
+      return resp;
+    }).catch(()=>caches.match(event.request).then(r=>r||caches.match('./index.html'))));
+  } else {
+    event.respondWith(caches.match(event.request).then(cached=>cached||fetch(event.request).then(resp=>{if(resp.ok){const copy=resp.clone();caches.open(CACHE_NAME).then(c=>c.put(event.request,copy));}return resp;})));
   }
-
-  const requestUrl = new URL(event.request.url);
-
-  if (requestUrl.origin !== self.location.origin) {
-    return;
-  }
-
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-
-      return fetch(event.request).then((response) => {
-        if (response.ok) {
-          const copy = response.clone();
-
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, copy);
-          });
-        }
-
-        return response;
-      });
-    })
-  );
 });

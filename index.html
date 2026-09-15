@@ -216,7 +216,9 @@
           <button class="btn btn-outline" onclick="showDashboard()">← Geri</button>
           <button class="btn btn-outline" id="featureBtn" onclick="openFeatureModal()">⚙️ Ev Özellikleri</button>
           <button class="btn btn-dark" onclick="saveQuote()">Kaydet</button>
-          <button class="btn btn-primary" onclick="printQuote()">PDF / Yazdır</button>
+          <button class="btn btn-outline" onclick="exportExcel()">📊 EMAK Formatında Excel</button>
+          <button class="btn btn-primary" onclick="printQuote()">📄 EMAK Formatında PDF</button>
+          <button class="btn btn-outline" onclick="printQuote()">🖨️ Yazdır</button>
         </div>
       </div>
 
@@ -754,6 +756,45 @@ function editQuote(idx) {
   document.getElementById('quoteView').classList.remove('hidden');
   switchTab('tesisat');
   recalc();
+}
+
+function xmlEscape(v){ return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function exportExcel(){
+  const totals=recalc();
+  const customer=document.getElementById('qCustomer').value || 'İsimsiz Proje';
+  const date=document.getElementById('qDate').value || '';
+  const units=+document.getElementById('qUnits').value || 1;
+  const oh=+document.getElementById('qOverhead').value || 0;
+  const pr=+document.getElementById('qProfit').value || 0;
+  const vat=+document.getElementById('qVat').value || 0;
+  const notes=document.getElementById('qNotes').value || '';
+  const rate=1+(oh/100)+(pr/100);
+  const rows=[];
+  rows.push(`<tr><th colspan="7" style="font-size:16pt;background:#b91c1c;color:#fff">EMAK ELEKTRİK MAKİNA TESİSAT SAN. LTD. ŞTİ.</th></tr>`);
+  rows.push(`<tr><th colspan="7" style="font-size:13pt">${xmlEscape(currentModule==='santiye'?'ŞANTİYE ELEKTRİK İŞLERİ FİYAT TEKLİFİ':'ELEKTRİK İÇ TESİSAT İŞLERİ FİYAT TEKLİFİ')}</th></tr>`);
+  rows.push(`<tr><td><b>Müşteri / Proje</b></td><td colspan="3">${xmlEscape(customer)}</td><td><b>Tarih</b></td><td colspan="2">${xmlEscape(date)}</td></tr>`);
+  rows.push(`<tr><td><b>Bağımsız Bölüm</b></td><td>${units}</td><td><b>Genel Gider %</b></td><td>${oh}</td><td><b>Firma Kârı %</b></td><td>${pr}</td><td><b>KDV % ${vat}</b></td></tr>`);
+  rows.push(`<tr><th>POZ</th><th>AÇIKLAMA</th><th>MARKA</th><th>BİRİM</th><th>MİKTAR</th><th>BİRİM FİYAT</th><th>TOPLAM</th></tr>`);
+  rows.push(`<tr><th colspan="7" style="background:#e5e7eb">İÇ TESİSAT / MALZEME + İŞÇİLİK</th></tr>`);
+  tesisatItems.filter(it=>itemVisible(it)&&(+it.miktar||0)>0).forEach(it=>{
+    const bf=(+it.mat||0)+(+it.lab||0), total=bf*(+it.miktar||0)*rate;
+    rows.push(`<tr><td>${it.poz}</td><td>${xmlEscape(it.desc)}</td><td>${xmlEscape(it.marka)}</td><td>${xmlEscape(it.unit||'Adet')}</td><td>${+it.miktar||0}</td><td>${bf.toFixed(2)}</td><td>${total.toFixed(2)}</td></tr>`);
+  });
+  rows.push(`<tr><th colspan="7" style="background:#e5e7eb">MONTAJ</th></tr>`);
+  montajItems.filter(it=>(+it.miktar||0)>0).forEach(it=>{
+    const bf=+it.lab||0,total=bf*(+it.miktar||0)*rate;
+    rows.push(`<tr><td>${it.poz}</td><td>${xmlEscape(it.desc)}</td><td>${xmlEscape(it.marka)}</td><td>${xmlEscape(it.unit||'Adet')}</td><td>${+it.miktar||0}</td><td>${bf.toFixed(2)}</td><td>${total.toFixed(2)}</td></tr>`);
+  });
+  rows.push(`<tr><th colspan="6">BİRİM TOPLAMI</th><th>${totals.unitTotal.toFixed(2)}</th></tr>`);
+  rows.push(`<tr><th colspan="6">ARA TOPLAM (${units} bağımsız bölüm)</th><th>${totals.subTotal.toFixed(2)}</th></tr>`);
+  rows.push(`<tr><th colspan="6">KDV %${vat}</th><th>${totals.vat.toFixed(2)}</th></tr>`);
+  rows.push(`<tr><th colspan="6" style="font-size:13pt">GENEL TOPLAM</th><th style="font-size:13pt">${totals.grand.toFixed(2)} TL</th></tr>`);
+  rows.push(`<tr><td colspan="7"><b>NOTLAR:</b><br>${xmlEscape(notes).replace(/\n/g,'<br>')}</td></tr>`);
+  const html=`<!doctype html><html><head><meta charset="UTF-8"><style>table{border-collapse:collapse;font-family:Arial}td,th{border:1px solid #999;padding:6px}th{font-weight:bold}</style></head><body><table>${rows.join('')}</table></body></html>`;
+  const blob=new Blob(['\ufeff',html],{type:'application/vnd.ms-excel;charset=utf-8'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  const safe=customer.replace(/[^a-zA-Z0-9çğıöşüÇĞİÖŞÜ_-]+/g,'_').slice(0,50);
+  a.download=`EMAK_${safe}_${date||'teklif'}.xls`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 }
 
 function printQuote() {
